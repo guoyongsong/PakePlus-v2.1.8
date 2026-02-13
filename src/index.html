@@ -1,11 +1,906 @@
 <!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>PakePlus</title>
-    </head>
-    <body>
-        Hello World
-    </body>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能照片裁剪 - A4左对齐排版</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .main-content {
+            padding: 40px;
+        }
+
+        .upload-area {
+            border: 3px dashed #ddd;
+            border-radius: 15px;
+            padding: 60px 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: #fafafa;
+            margin-bottom: 30px;
+        }
+
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #667eea;
+            background: #e8eeff;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .upload-text {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .upload-hint {
+            font-size: 13px;
+            color: #999;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .controls {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            display: none;
+        }
+
+        .controls.active {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #444;
+            font-size: 14px;
+        }
+
+        .control-hint {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .slider {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+
+        .slider-value {
+            min-width: 60px;
+            text-align: center;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .margin-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .margin-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .margin-input-group label {
+            font-size: 12px;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .margin-input-group input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            width: 100%;
+        }
+
+        .preview-section {
+            display: none;
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .preview-section.active {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @media (max-width: 968px) {
+            .preview-section.active {
+                grid-template-columns: 1fr;
+            }
+            .margin-inputs {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .preview-box {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .preview-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #444;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .badge {
+            background: #667eea;
+            color: white;
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+
+        .canvas-wrapper {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            overflow: auto;
+            max-height: 600px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        canvas {
+            display: block;
+            max-width: 100%;
+        }
+
+        .action-buttons {
+            margin-top: 30px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 14px 32px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #666;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .loading {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255,255,255,0.95);
+            padding: 30px 50px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            z-index: 1000;
+            text-align: center;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .detection-info {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 12px;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #2e7d32;
+        }
+
+        .detection-info.error {
+            background: #ffebee;
+            border-left-color: #f44336;
+            color: #c62828;
+        }
+
+        .align-indicator {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #667eea;
+            position: relative;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
+        .align-indicator::before {
+            content: '';
+            position: absolute;
+            left: 2px;
+            top: 2px;
+            width: 8px;
+            height: 14px;
+            background: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📄 智能证件照排版工具 <span class="align-indicator" title="左对齐布局"></span></h1>
+            <p>自动识别黑色边框，左对齐A4打印排版（支持自定义边距）</p>
+        </div>
+
+        <div class="main-content">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📤</div>
+                <div class="upload-text">点击或拖拽上传照片</div>
+                <div class="upload-hint">支持 JPG、PNG 格式，自动识别黑色方框边界</div>
+                <input type="file" id="fileInput" accept="image/*">
+            </div>
+
+            <div class="controls" id="controls">
+                <div class="detection-info" id="detectionInfo">
+                    正在检测边框...
+                </div>
+
+                <div class="control-group">
+                    <label class="control-label">
+                        边框检测灵敏度
+                        <span class="control-hint">值越小检测越敏感（如果检测不准请调整）</span>
+                    </label>
+                    <div class="slider-container">
+                        <input type="range" class="slider" id="sensitivitySlider" min="30" max="100" value="50">
+                        <span class="slider-value" id="sensitivityValue">50</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label class="control-label">
+                        页面边距设置（单位：毫米 mm）
+                        <span class="control-hint">左对齐布局，内容靠左侧排列</span>
+                    </label>
+                    <div class="margin-inputs">
+                        <div class="margin-input-group">
+                            <label>左边距</label>
+                            <input type="number" id="marginLeft" value="15" min="0" max="50" step="1">
+                        </div>
+                        <div class="margin-input-group">
+                            <label>右边距</label>
+                            <input type="number" id="marginRight" value="10" min="0" max="50" step="1">
+                        </div>
+                        <div class="margin-input-group">
+                            <label>上边距</label>
+                            <input type="number" id="marginTop" value="15" min="0" max="50" step="1">
+                        </div>
+                        <div class="margin-input-group">
+                            <label>下边距</label>
+                            <input type="number" id="marginBottom" value="15" min="0" max="50" step="1">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label class="control-label">输出DPI（打印精度）</label>
+                    <select id="dpiSelect" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ddd;">
+                        <option value="150">150 DPI（快速预览）</option>
+                        <option value="300" selected>300 DPI（标准打印质量）</option>
+                        <option value="600">600 DPI（高精度印刷）</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="preview-section" id="previewSection">
+                <div class="preview-box">
+                    <div class="preview-title">
+                        原始照片
+                        <span class="badge" id="originalSize">-</span>
+                    </div>
+                    <div class="canvas-wrapper">
+                        <canvas id="originalCanvas"></canvas>
+                    </div>
+                </div>
+                
+                <div class="preview-box">
+                    <div class="preview-title">
+                        A4排版预览（左对齐）
+                        <span class="badge" id="resultSize">-</span>
+                    </div>
+                    <div class="canvas-wrapper">
+                        <canvas id="resultCanvas"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-buttons" id="actionButtons" style="display: none;">
+                <button class="btn btn-secondary" onclick="resetAll()">
+                    🔄 重新上传
+                </button>
+                <button class="btn btn-primary" onclick="downloadImage()">
+                    💾 下载A4照片
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <div>正在处理...</div>
+    </div>
+
+    <script>
+        let originalImage = null;
+        let resultImageData = null;
+        let detectedBox = null;
+
+        // A4尺寸（毫米）
+        const A4_WIDTH_MM = 210;
+        const A4_HEIGHT_MM = 297;
+
+        // DOM元素
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const controls = document.getElementById('controls');
+        const previewSection = document.getElementById('previewSection');
+        const actionButtons = document.getElementById('actionButtons');
+        const detectionInfo = document.getElementById('detectionInfo');
+
+        // 边距输入框
+        const marginInputs = {
+            left: document.getElementById('marginLeft'),
+            right: document.getElementById('marginRight'),
+            top: document.getElementById('marginTop'),
+            bottom: document.getElementById('marginBottom')
+        };
+
+        // 上传事件
+        uploadArea.addEventListener('click', () => fileInput.click());
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) handleFile(files[0]);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) handleFile(e.target.files[0]);
+        });
+
+        // 灵敏度滑块
+        document.getElementById('sensitivitySlider').addEventListener('input', (e) => {
+            document.getElementById('sensitivityValue').textContent = e.target.value;
+            if (originalImage) detectAndProcess();
+        });
+
+        // 边距输入监听
+        Object.values(marginInputs).forEach(input => {
+            input.addEventListener('change', () => {
+                if (originalImage) processImage();
+            });
+        });
+
+        document.getElementById('dpiSelect').addEventListener('change', () => {
+            if (originalImage) processImage();
+        });
+
+        function handleFile(file) {
+            if (!file.type.startsWith('image/')) {
+                alert('请上传图片文件！');
+                return;
+            }
+
+            showLoading(true);
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                originalImage = new Image();
+                originalImage.onload = () => {
+                    controls.classList.add('active');
+                    previewSection.classList.add('active');
+                    actionButtons.style.display = 'flex';
+                    displayOriginal();
+                    detectAndProcess();
+                };
+                originalImage.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function displayOriginal() {
+            const canvas = document.getElementById('originalCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            const maxPreview = 500;
+            let width = originalImage.width;
+            let height = originalImage.height;
+            
+            if (width > maxPreview || height > maxPreview) {
+                const ratio = Math.min(maxPreview / width, maxPreview / height);
+                width *= ratio;
+                height *= ratio;
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            ctx.drawImage(originalImage, 0, 0, width, height);
+            
+            document.getElementById('originalSize').textContent = 
+                `${originalImage.width} × ${originalImage.height}`;
+        }
+
+        // Sobel边缘检测
+        function detectBoxByEdges(imageData, width, height, sensitivity) {
+            const data = imageData.data;
+            
+            // 转换为灰度
+            const gray = new Uint8Array(width * height);
+            for (let i = 0; i < width * height; i++) {
+                const idx = i * 4;
+                gray[i] = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
+            }
+            
+            // Sobel边缘检测
+            const edges = new Float32Array(width * height);
+            let maxEdge = 0;
+            
+            for (let y = 1; y < height - 1; y++) {
+                for (let x = 1; x < width - 1; x++) {
+                    const idx = y * width + x;
+                    
+                    const gx = (
+                        -1 * gray[(y-1) * width + (x-1)] +
+                        -2 * gray[y * width + (x-1)] +
+                        -1 * gray[(y+1) * width + (x-1)] +
+                        1 * gray[(y-1) * width + (x+1)] +
+                        2 * gray[y * width + (x+1)] +
+                        1 * gray[(y+1) * width + (x+1)]
+                    );
+                    
+                    const gy = (
+                        -1 * gray[(y-1) * width + (x-1)] +
+                        -2 * gray[(y-1) * width + x] +
+                        -1 * gray[(y-1) * width + (x+1)] +
+                        1 * gray[(y+1) * width + (x-1)] +
+                        2 * gray[(y+1) * width + x] +
+                        1 * gray[(y+1) * width + (x+1)]
+                    );
+                    
+                    const magnitude = Math.sqrt(gx * gx + gy * gy);
+                    edges[idx] = magnitude;
+                    if (magnitude > maxEdge) maxEdge = magnitude;
+                }
+            }
+            
+            // 二值化
+            const edgeThresh = maxEdge * (sensitivity / 100);
+            const binary = new Uint8Array(width * height);
+            for (let i = 0; i < width * height; i++) {
+                binary[i] = edges[i] > edgeThresh ? 255 : 0;
+            }
+            
+            // 投影分析
+            const hProj = new Float32Array(height);
+            for (let y = 0; y < height; y++) {
+                let sum = 0;
+                for (let x = 0; x < width; x++) {
+                    sum += binary[y * width + x];
+                }
+                hProj[y] = sum;
+            }
+            
+            const vProj = new Float32Array(width);
+            for (let x = 0; x < width; x++) {
+                let sum = 0;
+                for (let y = 0; y < height; y++) {
+                    sum += binary[y * width + x];
+                }
+                vProj[x] = sum;
+            }
+            
+            // 找边界
+            function findBoundaries(proj, minPos, maxPos) {
+                const avg = proj.reduce((a, b) => a + b, 0) / proj.length;
+                const th = avg * 2;
+                
+                let start = -1, end = -1;
+                
+                for (let i = minPos; i < maxPos; i++) {
+                    if (proj[i] > th) {
+                        start = i;
+                        break;
+                    }
+                }
+                
+                for (let i = maxPos - 1; i > minPos; i--) {
+                    if (proj[i] > th) {
+                        end = i;
+                        break;
+                    }
+                }
+                
+                return { start, end };
+            }
+            
+            const hBound = findBoundaries(hProj, 0, height);
+            const vBound = findBoundaries(vProj, 0, width);
+            
+            if (hBound.start !== -1 && hBound.end !== -1 && 
+                vBound.start !== -1 && vBound.end !== -1) {
+                
+                const boxH = hBound.end - hBound.start;
+                const boxW = vBound.end - vBound.start;
+                const aspect = boxH / boxW;
+                
+                if (aspect > 0.4 && aspect < 1.0 && boxW > width * 0.3 && boxH > height * 0.3) {
+                    return {
+                        left: vBound.start,
+                        top: hBound.start,
+                        width: boxW,
+                        height: boxH
+                    };
+                }
+            }
+            
+            return null;
+        }
+
+        // 备用颜色检测
+        function detectByColor(imageData, width, height) {
+            const data = imageData.data;
+            const blackThresh = 80;
+            
+            let minX = width, maxX = 0, minY = height, maxY = 0;
+            let found = false;
+            
+            for (let y = 0; y < height; y += 4) {
+                for (let x = 0; x < width; x += 4) {
+                    const idx = (y * width + x) * 4;
+                    if (data[idx] < blackThresh && data[idx+1] < blackThresh && data[idx+2] < blackThresh) {
+                        minX = Math.min(minX, x);
+                        maxX = Math.max(maxX, x);
+                        minY = Math.min(minY, y);
+                        maxY = Math.max(maxY, y);
+                        found = true;
+                    }
+                }
+            }
+            
+            if (found) {
+                const w = maxX - minX;
+                const h = maxY - minY;
+                const aspect = h / w;
+                if (aspect > 0.4 && aspect < 1.0) {
+                    return { left: minX, top: minY, width: w, height: h };
+                }
+            }
+            return null;
+        }
+
+        function detectAndProcess() {
+            showLoading(true);
+            
+            setTimeout(() => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                const maxAnalyzeSize = 1000;
+                let analyzeWidth = originalImage.width;
+                let analyzeHeight = originalImage.height;
+                let scale = 1;
+                
+                if (analyzeWidth > maxAnalyzeSize || analyzeHeight > maxAnalyzeSize) {
+                    scale = maxAnalyzeSize / Math.max(analyzeWidth, analyzeHeight);
+                    analyzeWidth = Math.floor(analyzeWidth * scale);
+                    analyzeHeight = Math.floor(analyzeHeight * scale);
+                }
+                
+                canvas.width = analyzeWidth;
+                canvas.height = analyzeHeight;
+                ctx.drawImage(originalImage, 0, 0, analyzeWidth, analyzeHeight);
+                
+                const imageData = ctx.getImageData(0, 0, analyzeWidth, analyzeHeight);
+                const sensitivity = parseInt(document.getElementById('sensitivitySlider').value);
+                
+                detectedBox = detectBoxByEdges(imageData, analyzeWidth, analyzeHeight, sensitivity);
+                
+                if (!detectedBox) {
+                    detectedBox = detectByColor(imageData, analyzeWidth, analyzeHeight);
+                }
+                
+                if (!detectedBox) {
+                    detectedBox = {
+                        left: 0,
+                        top: 0,
+                        width: originalImage.width,
+                        height: originalImage.height
+                    };
+                    detectionInfo.textContent = '⚠️ 未检测到边框，使用整张图片';
+                    detectionInfo.classList.add('error');
+                } else {
+                    if (scale !== 1) {
+                        detectedBox.left = Math.floor(detectedBox.left / scale);
+                        detectedBox.top = Math.floor(detectedBox.top / scale);
+                        detectedBox.width = Math.floor(detectedBox.width / scale);
+                        detectedBox.height = Math.floor(detectedBox.height / scale);
+                    }
+                    
+                    const padding = Math.min(detectedBox.width, detectedBox.height) * 0.005;
+                    detectedBox.left = Math.max(0, detectedBox.left - padding);
+                    detectedBox.top = Math.max(0, detectedBox.top - padding);
+                    detectedBox.width = Math.min(originalImage.width - detectedBox.left, detectedBox.width + padding * 2);
+                    detectedBox.height = Math.min(originalImage.height - detectedBox.top, detectedBox.height + padding * 2);
+                    
+                    detectionInfo.textContent = `✅ 检测到边框：${Math.round(detectedBox.width)}×${Math.round(detectedBox.height)} px`;
+                    detectionInfo.classList.remove('error');
+                }
+                
+                processImage();
+                showLoading(false);
+            }, 100);
+        }
+
+        function processImage() {
+            if (!detectedBox) return;
+            
+            const dpi = parseInt(document.getElementById('dpiSelect').value);
+            
+            // 获取边距（mm转px）
+            const mmToPx = (mm) => Math.round(mm * dpi / 25.4);
+            const leftMargin = mmToPx(parseFloat(marginInputs.left.value) || 15);
+            const rightMargin = mmToPx(parseFloat(marginInputs.right.value) || 10);
+            const topMargin = mmToPx(parseFloat(marginInputs.top.value) || 15);
+            const bottomMargin = mmToPx(parseFloat(marginInputs.bottom.value) || 15);
+            
+            // A4尺寸
+            const a4Width = Math.round(A4_WIDTH_MM * dpi / 25.4);
+            const a4Height = Math.round(A4_HEIGHT_MM * dpi / 25.4);
+            
+            // 可用空间
+            const availableW = a4Width - leftMargin - rightMargin;
+            const availableH = a4Height - topMargin - bottomMargin;
+            
+            // 提取内容
+            const srcX = detectedBox.left;
+            const srcY = detectedBox.top;
+            const srcW = detectedBox.width;
+            const srcH = detectedBox.height;
+            
+            // 计算缩放（宽度填满可用空间）
+            const scale = availableW / srcW;
+            const targetW = availableW;
+            const targetH = Math.round(srcH * scale);
+            
+            // 如果高度超出，限制高度
+            let finalW = targetW;
+            let finalH = targetH;
+            if (targetH > availableH) {
+                const scaleH = availableH / srcH;
+                finalH = availableH;
+                finalW = Math.round(srcW * scaleH);
+            }
+            
+            // 创建A4画布
+            const resultCanvas = document.getElementById('resultCanvas');
+            const resultCtx = resultCanvas.getContext('2d');
+            
+            resultCanvas.width = a4Width;
+            resultCanvas.height = a4Height;
+            
+            // 白底
+            resultCtx.fillStyle = '#FFFFFF';
+            resultCtx.fillRect(0, 0, a4Width, a4Height);
+            
+            // 左对齐：左边距，顶部上边距
+            const pasteX = leftMargin;
+            const pasteY = topMargin;
+            
+            // 高质量绘制
+            resultCtx.imageSmoothingEnabled = true;
+            resultCtx.imageSmoothingQuality = 'high';
+            
+            resultCtx.drawImage(
+                originalImage,
+                srcX, srcY, srcW, srcH,
+                pasteX, pasteY, finalW, finalH
+            );
+            
+            resultImageData = resultCanvas.toDataURL('image/jpeg', 0.95);
+            
+            document.getElementById('resultSize').textContent = 
+                `${a4Width}×${a4Height} @ ${dpi}DPI | 边距: ${marginInputs.left.value}/${marginInputs.right.value}/${marginInputs.top.value}/${marginInputs.bottom.value}mm`;
+        }
+
+        function downloadImage() {
+            if (!resultImageData) return;
+            
+            const dpi = document.getElementById('dpiSelect').value;
+            const l = marginInputs.left.value;
+            const r = marginInputs.right.value;
+            const t = marginInputs.top.value;
+            const b = marginInputs.bottom.value;
+            const timestamp = new Date().getTime();
+            
+            const filename = `A4回执_左对齐_${dpi}DPI_L${l}R${r}T${t}B${b}_${timestamp}.jpg`;
+            
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = resultImageData;
+            link.click();
+        }
+
+        function resetAll() {
+            originalImage = null;
+            resultImageData = null;
+            detectedBox = null;
+            fileInput.value = '';
+            controls.classList.remove('active');
+            previewSection.classList.remove('active');
+            actionButtons.style.display = 'none';
+            detectionInfo.textContent = '正在检测边框...';
+            detectionInfo.classList.remove('error');
+            
+            const canvases = document.querySelectorAll('canvas');
+            canvases.forEach(canvas => {
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            });
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').classList.toggle('active', show);
+        }
+    </script>
+</body>
 </html>
